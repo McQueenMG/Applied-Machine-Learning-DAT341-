@@ -61,6 +61,7 @@ def train_and_evaluate(train_df, test_df, name):
     results = [
         ('logistic regression', logreg_grid),
         ('linear svm', svm_grid),
+        ('naive bayes', nby_grid)
     ]
     print("\nmodel comparison (5-fold cv):")
     for model_name, grid in results:

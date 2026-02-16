@@ -6,12 +6,10 @@ import os
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 def clean_labels(df):
-    """
-    normalizes sentiment labels by fixing typos and casing.
-    """
+    # First we remove whitespace and lowercase all labels to ensure consistency
     df['sentiment'] = df['sentiment'].str.lower().str.strip()
     
-    # list of common typos found in the data
+    # Then we list all typos we found in the dataset
     neutral_mislabels = [
         'neutral?', 'nuetral', '_x0008_neutral', 'netural', 'netutral',
         'neural', 'neutrall', 'neugral', 'neutrla', 'nutral', 'neutra l', 'neutal',
@@ -26,21 +24,19 @@ def clean_labels(df):
         'negativ ', 'nedative'
     ]
     
-    # create mapping dictionary
+    # Then we create a mapping of all typos to their correct labels
     typos = {}
     for label in neutral_mislabels: typos[label] = 'neutral'
     for label in positive_mislabels: typos[label] = 'positive'
     for label in negative_mislabels: typos[label] = 'negative'
 
+    # Finally we replace all typos in the dataframe with the correct labels
     df['sentiment'] = df['sentiment'].replace(typos)
     
     return df
 
 def load_data():
-    """
-    loads the three datasets from the data folder.
-    returns none if files are missing.
-    """
+    
     # use relative path to make sure it runs on any computer
     current_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(current_dir, 'data')
@@ -55,19 +51,14 @@ def load_data():
         return None, None, None
 
 def ensure_graphs_dir():
-    """
-    creates a 'graphs' folder if it doesn't verify exist.
-    """
+    # Just makes sure the Graphs directory exists and returns its path. This is where all graphs will be saved.
     current_dir = os.path.dirname(os.path.abspath(__file__))
     graphs_dir = os.path.join(current_dir, 'Graphs')
     os.makedirs(graphs_dir, exist_ok=True)
     return graphs_dir
 
 def plot_confusion_matrix(y_true, y_pred, title, filename_suffix):
-    """
-    helper function to draw and save a confusion matrix.
-    used for both task 2 (agreement) and task 3 (model evaluation).
-    """
+    # draws and saves a confusion matrix
     graphs_dir = ensure_graphs_dir()
     
     # sorting to ensure consistent order: negative, neutral, positive
@@ -94,9 +85,7 @@ def plot_confusion_matrix(y_true, y_pred, title, filename_suffix):
     plt.close()
 
 def plot_label_distribution(df, title, filename_suffix):
-    """
-    simple bar chart to show how many positives, negatives, and neutrals there are.
-    """
+    
     graphs_dir = ensure_graphs_dir()
     
     plt.figure(figsize=(8, 6))
