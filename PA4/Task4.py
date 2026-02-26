@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
+
+
 class LinearClassifier(BaseEstimator):
     """
     General class for binary linear classifiers. Implements the predict
@@ -51,54 +53,70 @@ class LinearClassifier(BaseEstimator):
         """
         return np.array([1 if y == self.positive_class else -1 for y in Y])
 
-class Pegasos(LinearClassifier):
+
+class LogisticRegression(LinearClassifier):
     """
-    A straightforward implementation of the perceptron learning algorithm.
+    Logistic Regression trained with Pegasos-style SGD (log loss).
+
+    The update rule at step t is:
+        eta  = 1 / (lambda * t)
+        w   <- (1 - eta * lambda) * w  +  eta * y_i * sigma(-y_i * s_i) * x_i
+
+    where s_i = w · x_i and sigma(-y_i*s_i) = 1 / (1 + exp(y_i * s_i)).
+
+    Parameters
+    ----------
+    n_iter     : int   – number of epochs (passes through the training set)
+    lambda_    : float – regularisation strength λ; defaults to 1/N
     """
 
-    def __init__(self, n_iter=20):
-        """
-        The constructor can optionally take a parameter n_iter specifying how
-        many times we want to iterate through the training set.
-        """
+    def __init__(self, n_iter=10, print_objective=True):
         self.n_iter = n_iter
+        self.lambda_ = 0.1
+        self.print_objective = print_objective
 
-    def fit(self, X, Y, lambda_=0.0):
-        """
-        Train a linear classifier using the perceptron learning algorithm.
-        """
 
-        # First determine which output class will be associated with positive
-        # and negative scores, respectively.
+    def fit(self, X, Y, lambda_=None):
         self.find_classes(Y)
-
-        # Convert all outputs to +1 (for the positive class) or -1 (negative).
         Ye = self.encode_outputs(Y)
 
-        # If necessary, convert the sparse matrix returned by a vectorizer
-        # into a normal NumPy matrix.
+        # Convert sparse matrix (e.g. from TF-IDF) to dense array if needed.
         if not isinstance(X, np.ndarray):
             X = X.toarray()
 
-        # Initialize the weight vector to all zeros.
-        n_features, n_samples = X.shape[1], X.shape[0]
+        n_samples, n_features = X.shape
+        lam = self.lambda_ if self.lambda_ is not None else 1.0 / n_samples
         self.w = np.zeros(n_features)
-        
-        t = 0
-        # Pegasos algorithm:
+        t = 0  # global step counter
+
         for epoch in range(self.n_iter):
+            # Shuffle each epoch for better convergence.
+            loss_total = 0.0  # for tracking the total loss across epochs
             indices = np.random.permutation(n_samples)
             for i in indices:
                 t += 1
-                eta = 1.0 / (lambda_ * t)
-                
-                # Compute the output score for this instance.
+                eta = 1.0 / (lam * t)
                 x_i, y_i = X[i], Ye[i]
-                score = x_i.dot(self.w)
-                # If there was an error, update the weights.
-                if y_i*score < 1:
-                    self.w = (1 - eta * lambda_) * self.w + eta * y_i * x_i
-                else:
-                    self.w = (1 - eta * lambda_) * self.w
+                margin = y_i * x_i.dot(self.w)
+
+                # sigma(-margin) = 1 / (1 + exp(margin))
+                sigmoid_neg = 1.0 / (1.0 + np.exp(margin))
+                
+                loss_total += np.log1p(np.exp(-margin))  # log-loss for this instance
+
+                # L2 regularisation shrinkage + log-loss gradient step.
+                self.w *= (1.0 - eta * lam)
+                self.w += eta * y_i * sigmoid_neg * x_i
+
+            # Objective: mean logistic loss + L2 regularizer
+            if self.print_objective:
+                mean_log_loss = loss_total / indices.size
+                reg = 0.5 * lam * np.dot(self.w, self.w)
+                obj = mean_log_loss + reg
+                print(
+                    f"Epoch {epoch + 1}/{self.n_iter} | "
+                    f"objective≈{obj:.6f} (loss={mean_log_loss:.6f}, reg={reg:.6f})"
+                )
 
         return self
+
