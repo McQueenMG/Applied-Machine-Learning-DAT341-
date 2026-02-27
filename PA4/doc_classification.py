@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 
 from Task3 import Pegasos
 from Task4 import LogisticRegression
+from bonus import Pegasos_opt, Pegasos_sparse_opt, Pegasos_sparse_scale_opt
 
 def read_data(corpus_file):
     X = []
@@ -25,37 +26,84 @@ if __name__ == '__main__':
 
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(X, Y, test_size=0.2,
                                                     random_state=0)
-    N = 50
-    lam = 1 / (N * N)
+    N_p = 50
+    lam_p = 1 /(N_p * N_p)
 
-    svc_pipeline = make_pipeline(
+    Pegasos_pipeline = make_pipeline(
         TfidfVectorizer(),
         SelectKBest(k=1000),
         Normalizer(),
-        Pegasos(n_iter=N),
+        Pegasos(n_iter=N_p, lambda_=lam_p),
     )
 
     t0 = time.time()
-    svc_pipeline.fit(Xtrain, Ytrain, pegasos__lambda_=lam)
+    Pegasos_pipeline.fit(Xtrain, Ytrain)
     t1 = time.time()
-    Yguess_svc = svc_pipeline.predict(Xtest)
-    print('--- Task 3: Pegasos SVC ---')
+    Yguess_svc = Pegasos_pipeline.predict(Xtest)
+    print('--- Task 3: Pegasos ---')
     print('Training time: {:.2f} sec.'.format(t1 - t0))
     print('Accuracy:      {:.4f}'.format(accuracy_score(Ytest, Yguess_svc)))
+    
+    Pegasos_opt_pipeline = make_pipeline(
+        TfidfVectorizer(),
+        SelectKBest(k=1000),
+        Normalizer(),
+        Pegasos_opt(n_iter=N_p, lambda_=lam_p),
+    )
+
+    t0 = time.time()
+    Pegasos_opt_pipeline.fit(Xtrain, Ytrain)
+    t1 = time.time()
+    Yguess_svc = Pegasos_opt_pipeline.predict(Xtest)
+    print('--- Bonus Task: Optimized Pegasos ---')
+    print('Training time: {:.2f} sec.'.format(t1 - t0))
+    print('Accuracy:      {:.4f}'.format(accuracy_score(Ytest, Yguess_svc)))
+    
+    Pegasos_sparse_opt_pipeline = make_pipeline(
+        TfidfVectorizer(ngram_range=(1, 2)),
+        Normalizer(),
+        Pegasos_sparse_opt(n_iter=N_p, lambda_=lam_p),
+    )
+
+    t0 = time.time()
+    Pegasos_sparse_opt_pipeline.fit(Xtrain, Ytrain)
+    t1 = time.time()
+    Yguess_svc = Pegasos_sparse_opt_pipeline.predict(Xtest)
+    print('--- Bonus Task: Optimized Pegasos (Sparse) ---')
+    print('Training time: {:.2f} sec.'.format(t1 - t0))
+    print('Accuracy:      {:.4f}'.format(accuracy_score(Ytest, Yguess_svc)))
+    
+    Pegasos_sparse_scale_opt_pipeline = make_pipeline(
+        TfidfVectorizer(ngram_range=(1, 2)),
+        Normalizer(),
+        Pegasos_sparse_scale_opt(n_iter=N_p, lambda_=lam_p),
+    )
+
+    t0 = time.time()
+    Pegasos_sparse_scale_opt_pipeline.fit(Xtrain, Ytrain)
+    t1 = time.time()
+    Yguess_svc = Pegasos_sparse_scale_opt_pipeline.predict(Xtest)
+    print('--- Bonus Task: Optimized Pegasos (Sparse Scale) ---')
+    print('Training time: {:.2f} sec.'.format(t1 - t0))
+    print('Accuracy:      {:.4f}'.format(accuracy_score(Ytest, Yguess_svc)))
+    
+    N_lr = 30
+    lam_lr = 1 /  N_lr
 
     lr_pipeline = make_pipeline(
         TfidfVectorizer(),
         SelectKBest(k=1000),
         Normalizer(),
-        LogisticRegression(n_iter=N),
+        LogisticRegression(n_iter=N_lr, lambda_=lam_lr),
     )
 
     t0 = time.time()
-    lr_pipeline.fit(Xtrain, Ytrain,  logisticregression__lambda_=lam)
+    lr_pipeline.fit(Xtrain, Ytrain)
     t1 = time.time()
     Yguess_lr = lr_pipeline.predict(Xtest)
     print()
     print('--- Task 4: Logistic Regression ---')
     print('Training time: {:.2f} sec.'.format(t1 - t0))
     print('Accuracy:      {:.4f}'.format(accuracy_score(Ytest, Yguess_lr)))
+
 

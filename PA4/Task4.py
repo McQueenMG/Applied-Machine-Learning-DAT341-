@@ -70,13 +70,13 @@ class LogisticRegression(LinearClassifier):
     lambda_    : float – regularisation strength λ; defaults to 1/N
     """
 
-    def __init__(self, n_iter=10, print_objective=True):
+    def __init__(self, n_iter=10, print_objective=True, lambda_=None):
         self.n_iter = n_iter
-        self.lambda_ = 0.1
+        self.lambda_ = lambda_
         self.print_objective = print_objective
 
 
-    def fit(self, X, Y, lambda_=None):
+    def fit(self, X, Y):
         self.find_classes(Y)
         Ye = self.encode_outputs(Y)
 
@@ -91,7 +91,7 @@ class LogisticRegression(LinearClassifier):
 
         for epoch in range(self.n_iter):
             # Shuffle each epoch for better convergence.
-            loss_total = 0.0  # for tracking the total loss across epochs
+            epoch_loss = 0.0  # for tracking the total loss across epochs
             indices = np.random.permutation(n_samples)
             for i in indices:
                 t += 1
@@ -100,9 +100,11 @@ class LogisticRegression(LinearClassifier):
                 margin = y_i * x_i.dot(self.w)
 
                 # sigma(-margin) = 1 / (1 + exp(margin))
+                
+                
                 sigmoid_neg = 1.0 / (1.0 + np.exp(margin))
                 
-                loss_total += np.log1p(np.exp(-margin))  # log-loss for this instance
+                epoch_loss += np.log1p(np.exp(-margin))  # log-loss for this instance
 
                 # L2 regularisation shrinkage + log-loss gradient step.
                 self.w *= (1.0 - eta * lam)
@@ -110,7 +112,7 @@ class LogisticRegression(LinearClassifier):
 
             # Objective: mean logistic loss + L2 regularizer
             if self.print_objective:
-                mean_log_loss = loss_total / indices.size
+                mean_log_loss = epoch_loss / indices.size
                 reg = 0.5 * lam * np.dot(self.w, self.w)
                 obj = mean_log_loss + reg
                 print(

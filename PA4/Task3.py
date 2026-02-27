@@ -56,14 +56,15 @@ class Pegasos(LinearClassifier):
     A straightforward implementation of the perceptron learning algorithm.
     """
 
-    def __init__(self, n_iter=20):
+    def __init__(self, n_iter=20, lambda_=None):
         """
         The constructor can optionally take a parameter n_iter specifying how
         many times we want to iterate through the training set.
         """
         self.n_iter = n_iter
+        self.lambda_ = lambda_
 
-    def fit(self, X, Y, lambda_=0.0):
+    def fit(self, X, Y):
         """
         Train a linear classifier using the perceptron learning algorithm.
         """
@@ -79,6 +80,9 @@ class Pegasos(LinearClassifier):
         # into a normal NumPy matrix.
         if not isinstance(X, np.ndarray):
             X = X.toarray()
+            
+        lam = self.lambda_ if self.lambda_ is not None else 1.0 / X.shape[0]
+
 
         # Initialize the weight vector to all zeros.
         n_features, n_samples = X.shape[1], X.shape[0]
@@ -90,15 +94,15 @@ class Pegasos(LinearClassifier):
             indices = np.random.permutation(n_samples)
             for i in indices:
                 t += 1
-                eta = 1.0 / (lambda_ * t)
+                eta = 1.0 / (lam * t)
                 
                 # Compute the output score for this instance.
                 x_i, y_i = X[i], Ye[i]
                 score = x_i.dot(self.w)
                 # If there was an error, update the weights.
                 if y_i*score < 1:
-                    self.w = (1 - eta * lambda_) * self.w + eta * y_i * x_i
+                    self.w = (1 - eta * lam) * self.w + eta * y_i * x_i
                 else:
-                    self.w = (1 - eta * lambda_) * self.w
+                    self.w = (1 - eta * lam) * self.w
 
         return self
