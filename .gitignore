@@ -1,2 +1,3 @@
 sklearn-env/
 __pycache__/
+*.npz
